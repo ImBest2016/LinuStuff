@@ -14,23 +14,39 @@ CXX = g++
 # CC=clang
 # CXX=clang++
 
-CFLAGS = -g -Wall -O2
+CFLAGS = -g -Wall
 
 ############################################################
 ## UINT TEST
 
 TEST_TARGETS = $(DIR_TEST_BIN)/test1
 
+READDISK_LIBS=-lparted
+
 all: $(TEST_TARGETS)
 
-$(DIR_TEST_BIN)/test1: $(DIR_TEST_OBJ)/test1.o $(DIR_OBJ)/readdisk.o
-	$(CXX) -o $@ $(DIR_TEST_OBJ)/test1.o $(DIR_OBJ)/readdisk.o
+$(DIR_TEST_BIN)/test1: $(DIR_OBJ)/readdisk.o \
+                  $(DIR_OBJ)/mypipe.o \
+                  $(DIR_OBJ)/des.o \
+                  $(DIR_TEST_OBJ)/test1.o 
+	$(CXX) -o $@ $(DIR_OBJ)/readdisk.o \
+                  $(DIR_OBJ)/mypipe.o \
+                  $(DIR_OBJ)/des.o \
+                  $(DIR_TEST_OBJ)/test1.o \
+                  $(READDISK_LIBS)
+
+$(DIR_OBJ)/readdisk.o: $(DIR_SRC)/readdisk.c $(DIR_INC)/readdisk.h
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDES)
+
+$(DIR_OBJ)/mypipe.o: $(DIR_SRC)/mypipe.c $(DIR_INC)/mypipe.h
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDES)
+
+$(DIR_OBJ)/des.o: $(DIR_SRC)/des.c $(DIR_INC)/des.h
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDES)
 
 $(DIR_TEST_OBJ)/test1.o: $(DIR_TEST_SRC)/test1.cpp
 	$(CXX) $(CFLAGS) -c $< -o $@ $(INCLUDES)
 
-$(DIR_OBJ)/readdisk.o: $(DIR_SRC)/readdisk.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDES)
 
 ##
 ############################################################
