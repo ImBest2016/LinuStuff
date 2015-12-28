@@ -16,6 +16,9 @@
 #include "readdisk.h"
 #include "mypipe.h"
 #include "des.h"
+#include "base64.h"
+#include "serialno.h"
+#include <string.h>
 
 
 int read_and_print_pipe(const char* cmd, const char* model) {
@@ -63,11 +66,11 @@ TEST_CASE( "Teset for Read Hard Disk Serial Number", "ReadDiskSN") {
     REQUIRE( result == 0 );
     
     printf("-Serial Number- 1: %s, 2: %s\n", szSerialNo_1, szSerialNo_2);
-    REQUIRE( !strcmp(szSerialNo_1, szSerialNo_2) );    
+    REQUIRE( !strcmp(szSerialNo_1, szSerialNo_2) );
 }
 
 
-TEST_CASE( "Teset for DES, 3DES", "DES") {
+TEST_CASE( "Test for DES, 3DES", "DES") {
     printf("test des\n");
     
     int result = mbedtls_des_self_test(8);
@@ -79,4 +82,103 @@ TEST_CASE( "Teset for DES, 3DES", "DES") {
     printf("path = %s\n",path);
     
     REQUIRE(!strcmp(path, "/root"));
+}
+
+TEST_CASE( "Test for Base64", "base64") {
+    printf("test des\n");
+    
+    int result = mbedtls_base64_self_test(8);
+    REQUIRE(result == 0);    
+}
+
+TEST_CASE( "Test for String Function", "String") {
+    char* buf = 0;
+    int sizeofbuf = 10;
+    buf = (char*)malloc(sizeofbuf);
+
+    strncpy(buf, "12345", 9);
+    char* p = append_char(buf, sizeofbuf, 'a', 3);
+    REQUIRE(p == buf);
+    REQUIRE(!strcmp(buf, "12345aaa"));
+    
+    strncpy(buf, "12345678", 9);
+    p = append_char(buf, sizeofbuf, 'a', 3);
+    REQUIRE(p == 0);
+    REQUIRE(!strcmp(buf, "12345678"));
+    
+    
+    char* large_buf = 0;
+    int sizeof_large_buf = 128;
+    large_buf = (char*)malloc(sizeof_large_buf);
+    strncpy(large_buf, "abcdef", sizeof_large_buf);
+    p = append_string(large_buf, sizeof_large_buf, buf, 5);
+    REQUIRE(p == large_buf);
+    REQUIRE(!strcmp(large_buf, "abcdef1234567812345678123456781234567812345678"));
+    
+
+    strncpy(buf, "12345678", 9);
+    strncpy(large_buf, "abcdef", sizeof_large_buf);
+    for (int i = 1; i < 16; ++i) {
+        //printf("%d: %s\n", i, large_buf);
+        p = append_string(large_buf, sizeof_large_buf, buf, 1);
+        REQUIRE(p == large_buf);
+    }    
+    p = append_string(large_buf, sizeof_large_buf, buf, 1);
+    REQUIRE(p == 0);
+    free(large_buf);
+    free(buf);
+
+    sizeofbuf = 12;
+    buf = (char*)malloc(sizeofbuf);
+    strncpy(buf, "12345678", sizeofbuf);
+    int result = align_multi_8(buf, sizeofbuf);
+    REQUIRE(result == 0);
+    REQUIRE(!strcmp(buf, "12345678   "));
+    REQUIRE(!strcmp((char*)gszHdsn, "12345678   12345678   12345678   12345678   12345678   12345678   12345678   12345678   "));
+    free(buf);
+    
+    sizeofbuf = 20;
+    buf = (char*)malloc(sizeofbuf);
+    strncpy(buf, "1234567812345678", sizeofbuf);
+    result = align_multi_8(buf, sizeofbuf);
+    REQUIRE(result == 0);
+    REQUIRE(!strcmp(buf, "1234567812345678   "));
+    REQUIRE(!strcmp((char*)gszHdsn, "1234567812345678   1234567812345678   1234567812345678   1234567812345678   1234567812345678   1234567812345678   1234567812345678   1234567812345678   "));
+
+
+    strncpy(buf, "123456781234", sizeofbuf);
+    result = align_multi_8(buf, sizeofbuf);
+    REQUIRE(result == 0);
+    REQUIRE(!strcmp(buf, "123456781234"));
+    REQUIRE(!strcmp((char*)gszHdsn, "123456781234123456781234123456781234123456781234123456781234123456781234123456781234123456781234"));
+    free(buf);
+
+    sizeofbuf = strlen("WD-WCAV56962982") + 1;
+    buf = (char*)malloc(sizeofbuf);
+    strncpy(buf, "WD-WCAV56962982", sizeofbuf);
+    result = align_multi_8(buf, sizeofbuf);
+    REQUIRE(result == 0);
+    REQUIRE(!strcmp(buf, "WD-WCAV56962982"));
+    REQUIRE(!strcmp((char*)gszHdsn, "WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982"));
+    free(buf);   
+}
+
+TEST_CASE("Generate License File", "license") {
+    int result = encode_hd_sn("WD-WCAV56962982");
+    REQUIRE(result == strlen("WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982"));
+    
+    size_t n = 0;
+    result = mbedtls_base64_encode(gszEntext, sizeof(gszEntext), &n, gszHdsn, result);
+    REQUIRE(result == 0);
+    REQUIRE(n == strlen((char*)gszEntext));
+
+    char* p = strdup((char*)gszEntext);
+    
+    result = encode_hd_sn_base64("WD-WCAV56962982");
+    REQUIRE(result == 0);
+    REQUIRE(!strcmp(p, (char*)gszEntext));
+
+
+    
+    free(p);    
 }

@@ -32,7 +32,11 @@
 
 #include "des.h"
 
+
+#ifndef mbedtls_printf
 #define mbedtls_printf printf
+#endif //mbedtls_printf
+
 
 /* Implementation that should never be optimized out by the compiler */
 static void mbedtls_zeroize( void *v, size_t n ) {

@@ -11,22 +11,32 @@
 extern "C" {
 #endif
 
-/**
- * \brief encode the serial number of first hard disk with the default key
- * \return if succssed return the encoded - text, else return NULL
- */
-const char* encode_hd_sn();
-int decode_hd_sn(const char* szEntext, char* szHdsn, size_t maxlen);
-int encode_expire(const char* szHdsn, const char* szDate, char* szDateCode, size_t maxlen);
-int decode_expire(const char* szDateCode, const char* szHdsn, time_t* tDate);
-int generate_license(const char* filepath, const char* szHdsn, const char* szDate);
+extern int encode_expire(const char* szHdsn, const char* szDate, char* szDateCode, size_t maxlen);
+extern int decode_expire(const char* szDateCode, const char* szHdsn, time_t* tDate);
+extern int generate_license(const char* filepath, const char* szHdsn, const char* szDate);
 /**
  * \brief check the expire that saved in license filepath
  * \param filepath, the path of license file
  * \param szHdsn, the serial number of first hard disk
  * \return 1 if it was expired, else return 0
  */
-int check_expire(const char* filepath, const char* szHdsn);
+extern int check_expire(const char* filepath, const char* szHdsn);
+
+extern char* append_char(char* buffer, size_t maxlen, char c, size_t n);
+extern char* append_string(char* buffer, size_t maxlen, const char* str, size_t n);
+extern int   align_multi_8(char* szHdsn, size_t maxlen);
+
+extern unsigned char gszHdsn[1025];
+extern unsigned char gszEntext[8193];
+
+/**
+ * \brief encode the serial number of first hard disk with the default key
+ * \return if succssed return the length encoded - text, else return < 0
+ */
+extern int encode_hd_sn(const char* szHdsn);
+extern int encode_hd_sn_base64(const char* szHdsn);
+extern int decode_hd_sn(const char* szEnText, size_t len, char* szHdsn, size_t maxlen);
+extern int decode_hd_sn_base64(const char* szEnText);
 
 #ifdef __cplusplus
 }

@@ -24,6 +24,7 @@ extern "C" {
 extern void print_hard_disk_lisk(void);
 extern int  get_first_hd(char* devName, int len);
 extern int  get_hd_sn(const char* szDevName, char* szSN, int nLimit);
+extern int  get_first_hdsn(char* szSN, int nLimit);
 extern int  get_first_hd_via_pipe(char* devName, int len);
 extern int  get_hd_sn_via_pipe(const char* szDevName, char* szSN, int nLimit);
 

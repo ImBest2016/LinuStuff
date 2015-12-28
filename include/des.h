@@ -284,6 +284,9 @@ void mbedtls_des_setkey( uint32_t SK[32],
  */
 int mbedtls_des_self_test( int verbose );
 
+
+//extern int des_encrypt(const char* 
+
 #ifdef __cplusplus
 }
 #endif

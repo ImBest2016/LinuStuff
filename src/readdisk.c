@@ -60,6 +60,22 @@ int get_hd_sn(const char* szDevName, char* szSN, int nLimit)
     return nRtn;
 }
 
+
+int get_first_hdsn(char* szSN, int nLimit)
+{
+    char szDevPath[256];
+
+    if (get_first_hd(szDevPath, sizeof(szDevPath)))
+        return (-1);
+
+    if (get_hd_sn(szDevPath, szSN, nLimit))
+        return (-2);
+    
+    return (0);
+}
+
+
+
 int  get_first_hd_via_pipe(char* devName, int len) {
     int found = 0;
     MYPIPE_OPEN("fdisk -l", "r")
