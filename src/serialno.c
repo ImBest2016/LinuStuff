@@ -5,15 +5,22 @@
 
 static const unsigned char the_key[24] =
 {
-    0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-    0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01,
-    0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23
+    0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10, 
+    0x32, 0x10, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 
+    0x76, 0x54, 0x32, 0x10, 0xFE, 0xDC, 0xBA, 0x98, 
+};
+
+static const unsigned char the_key2[24] =
+{
+    0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10, 
+    0x54, 0x32, 0x10, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 
+    0x98, 0x76, 0x54, 0x32, 0x10, 0xFE, 0xDC, 0xBA, 
 };
 
 unsigned char gszHdsn[1025];
 unsigned char gszEntext[8193];
 
-#define times_for_encrypt   1
+#define times_for_encrypt   10000
 
 /**
  * return the length of ecrypt code
@@ -101,6 +108,28 @@ int encode_hd_sn(const char* szHdsn) {
     return _encode_hd_sn_();
 }
 
+
+static int _decode_hd_sn_(size_t txtlen) {
+    int result = 0;
+    size_t i = 0;
+    int j = 0;
+    unsigned char* p = gszEntext;
+    
+    mbedtls_des3_context ctx3;
+    mbedtls_des3_init( &ctx3 );
+    mbedtls_des3_set3key_dec( &ctx3, the_key );
+    
+    
+    for (; !result && j < times_for_encrypt; ++j) {
+        for (; i < txtlen; i += 8, p += 8)
+            result = mbedtls_des3_crypt_ecb(&ctx3, p, p);
+    }
+
+    mbedtls_des3_free( &ctx3 );
+    
+    return (result);
+}
+
 int encode_hd_sn_base64(const char* szHdsn) {
     int result = 0;
     size_t n = 0;
@@ -116,8 +145,30 @@ int encode_hd_sn_base64(const char* szHdsn) {
 
 
 int decode_hd_sn_base64(const char* szEnText) {
-    strncpy((char*)gszEntext, szEnText, sizeof(gszEntext));
-    //mbedtls_base64_encode()
+    size_t n = 0;
+    int result = 0;
     
+    memset(gszEntext, 0, sizeof(gszEntext));
+    memset(gszHdsn, 0, sizeof(gszHdsn));
+    
+    if (sizeof(gszEntext) <= strlen(szEnText))
+        return (-1);
+
+    result = mbedtls_base64_decode(gszEntext, sizeof(gszEntext), &n, (unsigned char*)szEnText, strlen((char*)szEnText));    
+    if (result) return (-2);
+    
+    result = _decode_hd_sn_(n);
+    if (result) return (-3);
+    
+    
+    n = strlen((char*)gszEntext);
+    if (n % 8) return (-4);
+   
+    n = n / 8;
+    if (n >= sizeof(gszHdsn)) return (-5);
+    
+    memcpy(gszHdsn, gszEntext, n);
+    gszHdsn[n] = 0;
+
     return (0);
 }

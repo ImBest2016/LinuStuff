@@ -85,13 +85,15 @@ TEST_CASE( "Test for DES, 3DES", "DES") {
 }
 
 TEST_CASE( "Test for Base64", "base64") {
-    printf("test des\n");
+    printf("test base64\n");
     
     int result = mbedtls_base64_self_test(8);
     REQUIRE(result == 0);    
 }
 
 TEST_CASE( "Test for String Function", "String") {
+    printf("test append_char\n");
+    
     char* buf = 0;
     int sizeofbuf = 10;
     buf = (char*)malloc(sizeofbuf);
@@ -107,6 +109,7 @@ TEST_CASE( "Test for String Function", "String") {
     REQUIRE(!strcmp(buf, "12345678"));
     
     
+    printf("test append_string\n");
     char* large_buf = 0;
     int sizeof_large_buf = 128;
     large_buf = (char*)malloc(sizeof_large_buf);
@@ -128,6 +131,7 @@ TEST_CASE( "Test for String Function", "String") {
     free(large_buf);
     free(buf);
 
+    printf("test align_multi_8\n");
     sizeofbuf = 12;
     buf = (char*)malloc(sizeofbuf);
     strncpy(buf, "12345678", sizeofbuf);
@@ -163,8 +167,13 @@ TEST_CASE( "Test for String Function", "String") {
     free(buf);   
 }
 
-TEST_CASE("Generate License File", "license") {
-    int result = encode_hd_sn("WD-WCAV56962982");
+
+#define test_disk_serial_number "WD-WCAV56962982"
+
+TEST_CASE("encode / decode", "enc/dec") {
+    printf("test encode\n");
+    
+    int result = encode_hd_sn(test_disk_serial_number);
     REQUIRE(result == strlen("WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982"));
     
     size_t n = 0;
@@ -174,11 +183,17 @@ TEST_CASE("Generate License File", "license") {
 
     char* p = strdup((char*)gszEntext);
     
-    result = encode_hd_sn_base64("WD-WCAV56962982");
+    result = encode_hd_sn_base64(test_disk_serial_number);
     REQUIRE(result == 0);
     REQUIRE(!strcmp(p, (char*)gszEntext));
 
 
+    printf("test decode\n");
+    result = decode_hd_sn_base64(p);
+    REQUIRE(result == 0);
+    REQUIRE(!strcmp((char*)gszHdsn, test_disk_serial_number));
     
     free(p);    
 }
+
+

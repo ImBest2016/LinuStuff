@@ -13,7 +13,6 @@ extern "C" {
 
 extern int encode_expire(const char* szHdsn, const char* szDate, char* szDateCode, size_t maxlen);
 extern int decode_expire(const char* szDateCode, const char* szHdsn, time_t* tDate);
-extern int generate_license(const char* filepath, const char* szHdsn, const char* szDate);
 /**
  * \brief check the expire that saved in license filepath
  * \param filepath, the path of license file
@@ -35,8 +34,10 @@ extern unsigned char gszEntext[8193];
  */
 extern int encode_hd_sn(const char* szHdsn);
 extern int encode_hd_sn_base64(const char* szHdsn);
-extern int decode_hd_sn(const char* szEnText, size_t len, char* szHdsn, size_t maxlen);
 extern int decode_hd_sn_base64(const char* szEnText);
+
+
+extern int generate_license(const char* filepath, const char* szHdsn, const char* szDate);
 
 #ifdef __cplusplus
 }
