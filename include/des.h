@@ -34,6 +34,8 @@
 
 #define MBEDTLS_DES_KEY_SIZE    8
 
+#define MBEDTLS_CIPHER_MODE_CBC 1
+
 // Regular implementation
 //
 
