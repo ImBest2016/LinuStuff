@@ -173,6 +173,9 @@ TEST_CASE( "Test for String Function", "String") {
 TEST_CASE("encode / decode", "enc/dec") {
     printf("test encode\n");
     
+    memset(gszHdsn, 0, sizeof(gszHdsn));
+    memset(gszEntext, 0, sizeof(gszEntext));
+    
     int result = encode_hd_sn(test_disk_serial_number);
     REQUIRE(result == strlen("WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982WD-WCAV56962982"));
     
@@ -194,6 +197,22 @@ TEST_CASE("encode / decode", "enc/dec") {
     REQUIRE(!strcmp((char*)gszHdsn, test_disk_serial_number));
     
     free(p);    
+}
+
+#define expire_date "2016-01-16 01:02:03"
+
+TEST_CASE("generate_license", "generate_license") {
+    printf("test generate_license\n");
+
+    int result = generate_license("license.txt", test_disk_serial_number, expire_date);
+    REQUIRE(result == 0);
+    
+    char szHdsn[512];
+    char szDate[32];
+    result = get_license("license.txt", szHdsn, sizeof(szHdsn), szDate, sizeof(szDate));
+    REQUIRE(result == 0);
+    REQUIRE(!strcmp(szHdsn, test_disk_serial_number));
+    REQUIRE(!strcmp(szDate, expire_date));
 }
 
 

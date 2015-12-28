@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "readdisk.h"
 #include "des.h"
 #include "base64.h"
@@ -25,16 +26,16 @@ unsigned char gszEntext[8193];
 /**
  * return the length of ecrypt code
  */
-static int _encode_hd_sn_() {
+static int _encode_hd_sn_(char* str, const unsigned char key[24]) {
     int result = 0;
     int j = 0;
-    unsigned char* p = gszHdsn;
-    int len = (int)strlen((char*)gszHdsn);
+    unsigned char* p = (unsigned char*)str;
+    int len = (int)strlen((char*)str);
     int i = 0;
     
     mbedtls_des3_context ctx3;
     mbedtls_des3_init( &ctx3 );
-    mbedtls_des3_set3key_enc( &ctx3, the_key );
+    mbedtls_des3_set3key_enc( &ctx3, key );
     
     
     for (; !result && j < times_for_encrypt; ++j) {
@@ -105,19 +106,19 @@ int encode_hd_sn(const char* szHdsn) {
     if (0 != (result = align_multi_8(buf, maxlen)))
         return -1;
     
-    return _encode_hd_sn_();
+    return _encode_hd_sn_((char*)gszHdsn, the_key);
 }
 
 
-static int _decode_hd_sn_(size_t txtlen) {
+static int _decode_hd_sn_(unsigned char* str, size_t txtlen, const unsigned char key[24]) {
     int result = 0;
     size_t i = 0;
     int j = 0;
-    unsigned char* p = gszEntext;
+    unsigned char* p = str;
     
     mbedtls_des3_context ctx3;
     mbedtls_des3_init( &ctx3 );
-    mbedtls_des3_set3key_dec( &ctx3, the_key );
+    mbedtls_des3_set3key_dec( &ctx3, key );
     
     
     for (; !result && j < times_for_encrypt; ++j) {
@@ -157,7 +158,7 @@ int decode_hd_sn_base64(const char* szEnText) {
     result = mbedtls_base64_decode(gszEntext, sizeof(gszEntext), &n, (unsigned char*)szEnText, strlen((char*)szEnText));    
     if (result) return (-2);
     
-    result = _decode_hd_sn_(n);
+    result = _decode_hd_sn_(gszEntext, n, the_key);
     if (result) return (-3);
     
     
@@ -171,4 +172,108 @@ int decode_hd_sn_base64(const char* szEnText) {
     gszHdsn[n] = 0;
 
     return (0);
+}
+
+
+static int write_license_file(const char* filepath, const char* enbuf) {
+    int result = 0;
+    FILE* fp = fopen(filepath, "w");
+    if (!fp) return (-1);
+    
+    if (strlen(enbuf) != fwrite(enbuf, 1, strlen(enbuf), fp))
+        result = -2;
+    
+    fclose(fp);
+    return (result);
+}
+
+int generate_license(const char* filepath, const char* szHdsn, const char* szDate)
+{
+    int result = 0;
+    size_t len = strlen(szHdsn) + strlen(szDate) + 8;
+    char* buffer = (char*)malloc(len);
+    char* enbuf  = (char*)malloc(len * 4);
+    size_t buflen =0;
+    
+    strcpy(buffer, szHdsn);
+    strcat(buffer, szDate);
+    
+    if ((len - 8) % 8)
+        append_char(buffer, len, ' ', 8 - len % 8); // (len - 8) % 8  = len % 8
+    buflen = strlen(buffer);
+    
+    while(1) {
+        size_t n = 0;
+        if (1 > (result =  _encode_hd_sn_(buffer, the_key2))) {
+            result = -3;
+            break;
+        }
+
+        if (0 != (result = mbedtls_base64_encode((unsigned char*)enbuf, len * 4, &n, (unsigned char*)buffer, buflen)))
+            break;
+        
+        result = write_license_file(filepath, enbuf);
+        break;
+    }
+    
+    if (enbuf)  free(enbuf);
+    if (buffer) free(buffer);
+
+    return (result);
+}
+
+
+static int get_license_file(const char* filepath, char* buf, size_t len)
+{
+    int result = 0;
+    FILE* fp = fopen(filepath, "r");
+    if (!fp) return -1;
+    if (NULL == fgets(buf, len, fp))
+        result = -2;
+    fclose(fp);
+    return result;
+}
+
+
+static int split_hdsn_date(char* buffer, char* szHdsn, size_t hdsn_len, char* szDate, size_t date_len) {
+    int result = 0;
+    //remove space
+    char* buf = (char*)buffer + strlen(buffer) - 1;
+    while(isspace(*buf))
+        buf--;
+    *(++buf) = 0;
+    
+    //copy date
+    strncpy(szDate, buf - strlen("2016-01-16 01:02:03"), date_len);
+    
+    //copy hdsn
+    {
+        char tmp = 0;
+        tmp = buffer[buf - buffer - strlen("2016-01-16 01:02:03")];
+        buffer[buf - buffer - strlen("2016-01-16 01:02:03")] = 0;
+        strncpy(szHdsn, buffer, hdsn_len);
+        buffer[buf - buffer - strlen("2016-01-16 01:02:03")] = tmp;
+    }
+    
+    return result;
+}
+
+int get_license(const char* filepath, char* szHdsn, size_t hdsn_len, char* szDate, size_t date_len)
+{
+    size_t n = 0;
+    size_t maxlen = hdsn_len + date_len + 1;
+    char* buffer = (char*)calloc(1, maxlen);
+    char* enbuf = (char*)calloc(1, maxlen);
+    
+    int result = get_license_file(filepath, enbuf, maxlen);
+    if (result) return (-1);
+    
+    result = mbedtls_base64_decode((unsigned char*)buffer, maxlen, &n, (unsigned char*)enbuf, strlen(enbuf));
+    if (result) return (-2);
+    
+    result = _decode_hd_sn_((unsigned char*)buffer, n, the_key2);
+    if (result) return (-3);
+    
+    result = split_hdsn_date(buffer, szHdsn, hdsn_len, szDate, date_len);
+    return (result);
 }
