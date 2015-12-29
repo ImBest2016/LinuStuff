@@ -184,6 +184,12 @@ static int write_license_file(const char* filepath, const char* enbuf) {
         result = -2;
     
     fclose(fp);
+    
+    if (!result) {
+        char command[1024];
+        snprintf(command, 1024, "chmod +r %s", filepath);
+        system(command);
+    }
     return (result);
 }
 

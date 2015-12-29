@@ -190,6 +190,7 @@ TEST_CASE("encode / decode", "enc/dec") {
     REQUIRE(result == 0);
     REQUIRE(!strcmp(p, (char*)gszEntext));
 
+    printf("encoded-hd-sn is '%s'\n", p);
 
     printf("test decode\n");
     result = decode_hd_sn_base64(p);
